@@ -137,14 +137,6 @@
       "api": "http://api.guangsuapi.com/api.php/provide/vod/from/gsm3u8",
       "name": "光速资源"
     },
-    "yinghuawang": {
-      "api": "http://m3u8.apiyhzy.com/api.php/provide/vod",
-      "name": "樱花资源网"
-    },
-    "kuaibo": {
-      "api": "http://www.kuaibozy.com/api.php/provide/vod",
-      "name": "快播资源"
-    },
     "baidu": {
       "api": "https://api.apibdzy.com/api.php/provide/vod/",
       "name": "百度|点播"
@@ -228,110 +220,6 @@
     "bdzy1com": {
       "name": "百度云zy",
       "api": "https://api.apibdzy.com/api.php/provide/vod"
-    },
-    "lovedannet": {
-      "name": "艾旦影视",
-      "api": "https://lovedan.net/api.php/provide/vod"
-    },
-    "91mdme": {
-      "name": "麻豆视频",
-      "api": "https://91md.me/api.php/provide/vod"
-    },
-    "91jpzywcom": {
-      "name": "91-精品-",
-      "api": "https://91jpzyw.com/api.php/provide/vod"
-    },
-    "lbapibycom": {
-      "name": "AIvin",
-      "api": "http://lbapiby.com/api.php/provide/vod"
-    },
-    "apibwzym3u8com": {
-      "name": "百万资源",
-      "api": "https://api.bwzyz.com/api.php/provide/vod"
-    },
-    "apisouavzyvip": {
-      "name": "souavZY",
-      "api": "https://api.souavzy.vip/api.php/provide/vod"
-    },
-    "155zy2com": {
-      "name": "155-资源",
-      "api": "https://155api.com/api.php/provide/vod"
-    },
-    "apiyutu": {
-      "name": "玉兔资源",
-      "api": "https://apiyutu.com/api.php/provide/vod"
-    },
-    "fhapi9com": {
-      "name": "番号资源",
-      "api": "http://fhapi9.com/api.php/provide/vod"
-    },
-    "wwwjingpinxcom": {
-      "name": "精品资源",
-      "api": "https://www.jingpinx.com/api.php/provide/vod"
-    },
-    "apilsbzy1com": {
-      "name": "老色逼",
-      "api": "https://apilsbzy1.com/api.php/provide/vod"
-    },
-    "thzy8me": {
-      "name": "桃花资源",
-      "api": "https://thzy1.me/api.php/provide/vod"
-    },
-    "wwwyyzywcjcom": {
-      "name": "优优资源",
-      "api": "https://www.yyzywcj.com/api.php/provide/vod"
-    },
-    "xiaojizylive": {
-      "name": "小鸡资源",
-      "api": "https://api.xiaojizy.live/provide/vod"
-    },
-    "hsckzyxyz": {
-      "name": "黄色仓库",
-      "api": "https://hsckzy.xyz/api.php/provide/vod"
-    },
-    "apidanaizicom": {
-      "name": "大奶子",
-      "api": "https://apidanaizi.com/api.php/provide/vod"
-    },
-    "jkunzyapicom": {
-      "name": "jkun资源",
-      "api": "https://jkunzyapi.com/api.php/provide/vod"
-    },
-    "lbapi9com": {
-      "name": "乐播资源",
-      "api": "https://lbapi9.com/api.php/provide/vod"
-    },
-    "Naixxzycom": {
-      "name": "奶香资源",
-      "api": "https://Naixxzy.com/api.php/provide/vod"
-    },
-    "slapibf": {
-      "name": "森林资源",
-      "api": "https://beiyong.slapibf.com/api.php/provide/vod"
-    },
-    "apilj": {
-      "name": "辣椒资源",
-      "api": "https://apilj.com/api.php/provide/vod"
-    },
-    "shayuapi": {
-      "name": "鲨鱼资源",
-      "api": "https://shayuapi.com/api.php/provide/vod"
-    },
-    "xzytv": {
-      "name": "幸资源",
-      "api": "https://xzybb2.com/api.php/provide/vod"
-    },
-    "doudouzy": {
-      "name": "豆豆资源",
-      "api": "https://api.douapi.cc/api.php/provide/vod"
-    },
-    "didizycom": {
-      "name": "滴滴资源",
-      "api": "https://api.ddapi.cc/api.php/provide/vod"
-    },
-    "heiliaozy": {
-      "name": "黑料资源",
-      "api": "https://www.heiliaozyapi.com/api.php/provide/vod"
     }
   }
 }
