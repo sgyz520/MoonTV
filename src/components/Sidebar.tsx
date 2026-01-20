@@ -32,9 +32,9 @@ const Logo = () => {
   return (
     <Link
       href='/'
-      className='flex items-center justify-center h-16 select-none hover:opacity-80 transition-opacity duration-200'
+      className='flex flex-col items-center justify-center p-2 h-auto max-h-24 select-none hover:opacity-80 transition-opacity duration-200'
     >
-      <span className='text-2xl font-bold text-green-600 tracking-tight'>
+      <span className='text-xl font-bold text-green-600 tracking-tight text-center whitespace-pre-line'>
         {siteName}
       </span>
     </Link>
