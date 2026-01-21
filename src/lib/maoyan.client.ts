@@ -16,9 +16,7 @@ interface MaoyanFilmItem {
   releaseDate: string;
 }
 
-interface MaoyanApiResponse {
-  films: MaoyanFilmItem[];
-}
+
 
 /**
  * 带超时的 fetch 请求

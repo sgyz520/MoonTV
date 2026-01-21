@@ -84,17 +84,12 @@ async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
     return films;
   } catch (error) {
     clearTimeout(timeoutId);
-    // 在Cloudflare环境中添加详细日志
-    console.error('猫眼数据抓取失败:', (error as Error).message);
-    if (html) {
-      console.error('HTML样本:', html.substring(0, 500) + '...');
-    }
     throw error;
   }
 }
 
-// 使用nodejs运行时，避免edge runtime的限制
-export const runtime = 'nodejs';
+// 使用edge运行时，兼容Cloudflare Pages
+export const runtime = 'edge';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
