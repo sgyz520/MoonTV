@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
 [build]
-command = "npm install --legacy-peer-deps && npm run pages:build"
+command = "pnpm install --frozen-lockfile && pnpm run pages:build"
 publish = ".vercel/output/static"
 
 [[redirects]]
