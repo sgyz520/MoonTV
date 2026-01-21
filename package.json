@@ -19,7 +19,7 @@
     "gen:version": "node scripts/generate-version.js",
     "postbuild": "echo 'Build completed - sitemap generation disabled'",
     "prepare": "husky install",
-    "pages:build": "npm install --legacy-peer-deps && npm run gen:runtime && npm run gen:manifest && next build --legacy-peer-deps && npx @cloudflare/next-on-pages@^1.11.0 --experimental-minify"
+    "pages:build": "npm run gen:runtime && npm run gen:manifest && next build && npx @cloudflare/next-on-pages@^1.11.0 --experimental-minify"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
