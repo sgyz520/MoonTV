@@ -3,16 +3,15 @@ import { NextResponse } from 'next/server';
 import { getCacheTime } from '@/lib/config';
 import { DoubanItem, DoubanResult } from '@/lib/types';
 
-interface DoubanApiResponse {
-  subjects: Array<{
-    id: string;
-    title: string;
-    cover: string;
-    rate: string;
-  }>;
+interface MaoyanFilmItem {
+  id: string;
+  name: string;
+  posterUrl: string;
+  score: string;
+  releaseDate: string;
 }
 
-async function fetchDoubanData(url: string): Promise<DoubanApiResponse> {
+async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
   // 添加超时控制
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
@@ -23,13 +22,14 @@ async function fetchDoubanData(url: string): Promise<DoubanApiResponse> {
     headers: {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-      Referer: 'https://movie.douban.com/',
-      Accept: 'application/json, text/plain, */*',
+      Referer: 'https://www.maoyan.com/',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     },
   };
 
+  let html = '';
   try {
-    // 尝试直接访问豆瓣API
+    // 尝试直接访问猫眼网页
     const response = await fetch(url, fetchOptions);
     clearTimeout(timeoutId);
 
@@ -37,14 +37,64 @@ async function fetchDoubanData(url: string): Promise<DoubanApiResponse> {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    return await response.json();
+    html = await response.text();
+    const films: MaoyanFilmItem[] = [];
+
+    // 简化的正则表达式，直接匹配所有电影卡片
+    const filmCardRegex = /<dd[\s\S]*?<\/dd>/g;
+    let filmCardMatch;
+
+    while ((filmCardMatch = filmCardRegex.exec(html)) !== null) {
+      const cardHtml = filmCardMatch[0];
+      
+      // 提取电影ID和标题
+      const idTitleRegex = /<a[^>]*href="\/films\/(\d+)"[^>]*>([^<]*)<\/a>/;
+      const idTitleMatch = idTitleRegex.exec(cardHtml);
+      if (!idTitleMatch) continue;
+
+      const id = idTitleMatch[1];
+      const title = idTitleMatch[2].trim();
+
+      // 提取海报URL - 优化正则表达式，匹配各种可能的img标签格式
+      const posterRegex = /<img[^>]*src=["']([^"']+)["'][^>]*>/;
+      const posterMatch = posterRegex.exec(cardHtml);
+      if (!posterMatch) continue;
+
+      const posterUrl = posterMatch[1];
+
+      // 提取评分 - 优化正则表达式，匹配不同的评分样式
+      const scoreRegex = /<div[^>]*class=["']channel-detail channel-detail-orange["'][^>]*>([^<]*)<\/div>/;
+      const scoreMatch = scoreRegex.exec(cardHtml);
+      const score = scoreMatch ? scoreMatch[1].trim() : '';
+
+      // 提取年份 - 从标题或副标题中提取
+      const yearRegex = /(?:<div[^>]*class=["']channel-detail movie-item-subtitle["'][^>]*>|[^>]*>)[^<]*?(\d{4})[^<]*?(?:<\/div>|$)/;
+      const yearMatch = yearRegex.exec(cardHtml);
+      const releaseDate = yearMatch ? yearMatch[1] : '';
+
+      films.push({
+        id,
+        name: title,
+        posterUrl,
+        score: score === '暂无评分' ? '' : score,
+        releaseDate,
+      });
+    }
+
+    return films;
   } catch (error) {
     clearTimeout(timeoutId);
+    // 在Cloudflare环境中添加详细日志
+    console.error('猫眼数据抓取失败:', (error as Error).message);
+    if (html) {
+      console.error('HTML样本:', html.substring(0, 500) + '...');
+    }
     throw error;
   }
 }
 
-export const runtime = 'edge';
+// 使用nodejs运行时，避免edge runtime的限制
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -84,23 +134,21 @@ export async function GET(request: Request) {
     );
   }
 
-  if (tag === 'top250') {
-    return handleTop250(pageStart);
-  }
-
-  const target = `https://movie.douban.com/j/search_subjects?type=${type}&tag=${tag}&sort=recommend&page_limit=${pageSize}&page_start=${pageStart}`;
+  // 猫眼电影的URL格式 - 无论参数如何，都返回热映电影
+  const offset = pageStart;
+  const target = `https://www.maoyan.com/films?showType=1&offset=${offset}`;
 
   try {
-    // 调用豆瓣 API
-    const doubanData = await fetchDoubanData(target);
+    // 调用猫眼 API
+    const maoyanData = await fetchMaoyanData(target);
 
-    // 转换数据格式
-    const list: DoubanItem[] = doubanData.subjects.map((item) => ({
-      id: item.id,
-      title: item.title,
-      poster: item.cover,
-      rate: item.rate,
-      year: '',
+    // 转换数据格式为DoubanItem
+    const list: DoubanItem[] = maoyanData.map((film) => ({
+      id: film.id,
+      title: film.name,
+      poster: film.posterUrl,
+      rate: film.score,
+      year: film.releaseDate,
     }));
 
     const response: DoubanResult = {
@@ -119,88 +167,8 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: '获取豆瓣数据失败', details: (error as Error).message },
+      { error: '获取猫眼数据失败', details: (error as Error).message },
       { status: 500 }
     );
   }
-}
-
-function handleTop250(pageStart: number) {
-  const target = `https://movie.douban.com/top250?start=${pageStart}&filter=`;
-
-  // 直接使用 fetch 获取 HTML 页面
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-  const fetchOptions = {
-    signal: controller.signal,
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-      Referer: 'https://movie.douban.com/',
-      Accept:
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    },
-  };
-
-  return fetch(target, fetchOptions)
-    .then(async (fetchResponse) => {
-      clearTimeout(timeoutId);
-
-      if (!fetchResponse.ok) {
-        throw new Error(`HTTP error! Status: ${fetchResponse.status}`);
-      }
-
-      // 获取 HTML 内容
-      const html = await fetchResponse.text();
-
-      // 通过正则同时捕获影片 id、标题、封面以及评分
-      const moviePattern =
-        /<div class="item">[\s\S]*?<a[^>]+href="https?:\/\/movie\.douban\.com\/subject\/(\d+)\/"[\s\S]*?<img[^>]+alt="([^"]+)"[^>]*src="([^"]+)"[\s\S]*?<span class="rating_num"[^>]*>([^<]*)<\/span>[\s\S]*?<\/div>/g;
-      const movies: DoubanItem[] = [];
-      let match;
-
-      while ((match = moviePattern.exec(html)) !== null) {
-        const id = match[1];
-        const title = match[2];
-        const cover = match[3];
-        const rate = match[4] || '';
-
-        // 处理图片 URL，确保使用 HTTPS
-        const processedCover = cover.replace(/^http:/, 'https:');
-
-        movies.push({
-          id: id,
-          title: title,
-          poster: processedCover,
-          rate: rate,
-          year: '',
-        });
-      }
-
-      const apiResponse: DoubanResult = {
-        code: 200,
-        message: '获取成功',
-        list: movies,
-      };
-
-      const cacheTime = await getCacheTime();
-      return NextResponse.json(apiResponse, {
-        headers: {
-          'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
-          'CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-        },
-      });
-    })
-    .catch((error) => {
-      clearTimeout(timeoutId);
-      return NextResponse.json(
-        {
-          error: '获取豆瓣 Top250 数据失败',
-          details: (error as Error).message,
-        },
-        { status: 500 }
-      );
-    });
 }

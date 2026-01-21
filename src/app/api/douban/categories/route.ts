@@ -27,6 +27,7 @@ async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
     },
   };
 
+  let html = '';
   try {
     // 尝试直接访问猫眼网页
     const response = await fetch(url, fetchOptions);
@@ -36,23 +37,15 @@ async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    const html = await response.text();
+    html = await response.text();
     const films: MaoyanFilmItem[] = [];
 
-    // 使用正则表达式提取电影数据
-    // 提取电影卡片容器
-    const filmListRegex = /<dl class="movie-list">([\s\S]*?)<\/dl>/;
-    const filmListMatch = filmListRegex.exec(html);
-    if (!filmListMatch) return films;
-
-    const filmListHtml = filmListMatch[1];
-
-    // 提取每个电影卡片
-    const filmCardRegex = /<dd>([\s\S]*?)<\/dd>/g;
+    // 简化的正则表达式，直接匹配所有电影卡片
+    const filmCardRegex = /<dd[\s\S]*?<\/dd>/g;
     let filmCardMatch;
 
-    while ((filmCardMatch = filmCardRegex.exec(filmListHtml)) !== null) {
-      const cardHtml = filmCardMatch[1];
+    while ((filmCardMatch = filmCardRegex.exec(html)) !== null) {
+      const cardHtml = filmCardMatch[0];
       
       // 提取电影ID和标题
       const idTitleRegex = /<a[^>]*href="\/films\/(\d+)"[^>]*>([^<]*)<\/a>/;
@@ -62,20 +55,20 @@ async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
       const id = idTitleMatch[1];
       const title = idTitleMatch[2].trim();
 
-      // 提取海报URL
-      const posterRegex = /<img[^>]*src="([^"]*)"[^>]*>/;
+      // 提取海报URL - 优化正则表达式，匹配各种可能的img标签格式
+      const posterRegex = /<img[^>]*src=["']([^"']+)["'][^>]*>/;
       const posterMatch = posterRegex.exec(cardHtml);
       if (!posterMatch) continue;
 
       const posterUrl = posterMatch[1];
 
-      // 提取评分
-      const scoreRegex = /<div class="channel-detail channel-detail-orange">([^<]*)<\/div>/;
+      // 提取评分 - 优化正则表达式，匹配不同的评分样式
+      const scoreRegex = /<div[^>]*class=["']channel-detail channel-detail-orange["'][^>]*>([^<]*)<\/div>/;
       const scoreMatch = scoreRegex.exec(cardHtml);
       const score = scoreMatch ? scoreMatch[1].trim() : '';
 
-      // 提取年份
-      const yearRegex = /<div class="channel-detail movie-item-subtitle">[^<]*?(\d{4})[^<]*?<\/div>/;
+      // 提取年份 - 从标题或副标题中提取
+      const yearRegex = /(?:<div[^>]*class=["']channel-detail movie-item-subtitle["'][^>]*>|[^>]*>)[^<]*?(\d{4})[^<]*?(?:<\/div>|$)/;
       const yearMatch = yearRegex.exec(cardHtml);
       const releaseDate = yearMatch ? yearMatch[1] : '';
 
@@ -91,11 +84,17 @@ async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
     return films;
   } catch (error) {
     clearTimeout(timeoutId);
+    // 在Cloudflare环境中添加详细日志
+    console.error('猫眼数据抓取失败:', (error as Error).message);
+    if (html) {
+      console.error('HTML样本:', html.substring(0, 500) + '...');
+    }
     throw error;
   }
 }
 
-export const runtime = 'edge';
+// 使用nodejs运行时，避免edge runtime的限制
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

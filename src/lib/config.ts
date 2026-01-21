@@ -479,8 +479,18 @@ export async function resetConfig() {
 }
 
 export async function getCacheTime(): Promise<number> {
-  const config = await getConfig();
-  return config.SiteConfig.SiteInterfaceCacheTime || 7200;
+  // 在Cloudflare环境中简化缓存时间获取，避免复杂的配置初始化
+  if (process.env.CF_PAGES || process.env.CLOUDFLARE_WORKERS) {
+    return 7200; // 默认缓存时间2小时
+  }
+  
+  try {
+    const config = await getConfig();
+    return config.SiteConfig.SiteInterfaceCacheTime || 7200;
+  } catch (error) {
+    console.error('获取缓存时间失败，使用默认值:', error);
+    return 7200; // 出错时使用默认值
+  }
 }
 
 export async function getAvailableApiSites(): Promise<ApiSite[]> {
