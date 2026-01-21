@@ -3,25 +3,15 @@ import { NextResponse } from 'next/server';
 import { getCacheTime } from '@/lib/config';
 import { DoubanItem, DoubanResult } from '@/lib/types';
 
-interface DoubanCategoryApiResponse {
-  total: number;
-  items: Array<{
-    id: string;
-    title: string;
-    card_subtitle: string;
-    pic: {
-      large: string;
-      normal: string;
-    };
-    rating: {
-      value: number;
-    };
-  }>;
+interface MaoyanFilmItem {
+  id: string;
+  name: string;
+  posterUrl: string;
+  score: string;
+  releaseDate: string;
 }
 
-async function fetchDoubanData(
-  url: string
-): Promise<DoubanCategoryApiResponse> {
+async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
   // 添加超时控制
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
@@ -32,14 +22,13 @@ async function fetchDoubanData(
     headers: {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-      Referer: 'https://movie.douban.com/',
-      Accept: 'application/json, text/plain, */*',
-      Origin: 'https://movie.douban.com',
+      Referer: 'https://www.maoyan.com/',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     },
   };
 
   try {
-    // 尝试直接访问豆瓣API
+    // 尝试直接访问猫眼网页
     const response = await fetch(url, fetchOptions);
     clearTimeout(timeoutId);
 
@@ -47,7 +36,59 @@ async function fetchDoubanData(
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    return await response.json();
+    const html = await response.text();
+    const films: MaoyanFilmItem[] = [];
+
+    // 使用正则表达式提取电影数据
+    // 提取电影卡片容器
+    const filmListRegex = /<dl class="movie-list">([\s\S]*?)<\/dl>/;
+    const filmListMatch = filmListRegex.exec(html);
+    if (!filmListMatch) return films;
+
+    const filmListHtml = filmListMatch[1];
+
+    // 提取每个电影卡片
+    const filmCardRegex = /<dd>([\s\S]*?)<\/dd>/g;
+    let filmCardMatch;
+
+    while ((filmCardMatch = filmCardRegex.exec(filmListHtml)) !== null) {
+      const cardHtml = filmCardMatch[1];
+      
+      // 提取电影ID和标题
+      const idTitleRegex = /<a[^>]*href="\/films\/(\d+)"[^>]*>([^<]*)<\/a>/;
+      const idTitleMatch = idTitleRegex.exec(cardHtml);
+      if (!idTitleMatch) continue;
+
+      const id = idTitleMatch[1];
+      const title = idTitleMatch[2].trim();
+
+      // 提取海报URL
+      const posterRegex = /<img[^>]*src="([^"]*)"[^>]*>/;
+      const posterMatch = posterRegex.exec(cardHtml);
+      if (!posterMatch) continue;
+
+      const posterUrl = posterMatch[1];
+
+      // 提取评分
+      const scoreRegex = /<div class="channel-detail channel-detail-orange">([^<]*)<\/div>/;
+      const scoreMatch = scoreRegex.exec(cardHtml);
+      const score = scoreMatch ? scoreMatch[1].trim() : '';
+
+      // 提取年份
+      const yearRegex = /<div class="channel-detail movie-item-subtitle">[^<]*?(\d{4})[^<]*?<\/div>/;
+      const yearMatch = yearRegex.exec(cardHtml);
+      const releaseDate = yearMatch ? yearMatch[1] : '';
+
+      films.push({
+        id,
+        name: title,
+        posterUrl,
+        score: score === '暂无评分' ? '' : score,
+        releaseDate,
+      });
+    }
+
+    return films;
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
@@ -95,19 +136,21 @@ export async function GET(request: Request) {
     );
   }
 
-  const target = `https://m.douban.com/rexxar/api/v2/subject/recent_hot/${kind}?start=${pageStart}&limit=${pageLimit}&category=${category}&type=${type}`;
+  // 猫眼电影的URL格式 - 无论参数如何，都返回热映电影
+  const offset = pageStart;
+  const target = `https://www.maoyan.com/films?showType=1&offset=${offset}`;
 
   try {
-    // 调用豆瓣 API
-    const doubanData = await fetchDoubanData(target);
+    // 调用猫眼 API
+    const maoyanData = await fetchMaoyanData(target);
 
-    // 转换数据格式
-    const list: DoubanItem[] = doubanData.items.map((item) => ({
-      id: item.id,
-      title: item.title,
-      poster: item.pic?.normal || item.pic?.large || '',
-      rate: item.rating?.value ? item.rating.value.toFixed(1) : '',
-      year: item.card_subtitle?.match(/(\d{4})/)?.[1] || '',
+    // 转换数据格式为DoubanItem
+    const list: DoubanItem[] = maoyanData.map((film) => ({
+      id: film.id,
+      title: film.name,
+      poster: film.posterUrl,
+      rate: film.score,
+      year: film.releaseDate,
     }));
 
     const response: DoubanResult = {
@@ -126,7 +169,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: '获取豆瓣数据失败', details: (error as Error).message },
+      { error: '获取猫眼数据失败', details: (error as Error).message },
       { status: 500 }
     );
   }

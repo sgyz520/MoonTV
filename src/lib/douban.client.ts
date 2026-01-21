@@ -133,34 +133,30 @@ export async function fetchDoubanCategories(
 
 /**
  * 统一的豆瓣分类数据获取函数，根据代理设置选择使用服务端 API 或客户端代理获取
+ * 现在使用猫眼电影数据替代豆瓣数据
  */
 export async function getDoubanCategories(
   params: DoubanCategoriesParams
 ): Promise<DoubanResult> {
-  if (shouldUseDoubanClient()) {
-    // 使用客户端代理获取（当设置了代理 URL 时）
-    return fetchDoubanCategories(params);
-  } else {
-    // 使用服务端 API（当没有设置代理 URL 时）
-    const { kind, category, type, pageLimit = 20, pageStart = 0 } = params;
-    const response = await fetch(
-      `/api/douban/categories?kind=${kind}&category=${category}&type=${type}&limit=${pageLimit}&start=${pageStart}`
-    );
+  // 直接使用服务端 API 获取猫眼数据，服务端已替换为猫眼数据源
+  const { kind, category, type, pageLimit = 20, pageStart = 0 } = params;
+  const response = await fetch(
+    `/api/douban/categories?kind=${kind}&category=${category}&type=${type}&limit=${pageLimit}&start=${pageStart}`
+  );
 
-    if (!response.ok) {
-      // 触发全局错误提示
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('globalError', {
-            detail: { message: '获取豆瓣分类数据失败' },
-          })
-        );
-      }
-      throw new Error('获取豆瓣分类数据失败');
+  if (!response.ok) {
+    // 触发全局错误提示
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('globalError', {
+          detail: { message: '获取电影分类数据失败' },
+        })
+      );
     }
-
-    return response.json();
+    throw new Error('获取电影分类数据失败');
   }
+
+  return response.json();
 }
 
 interface DoubanListParams {
