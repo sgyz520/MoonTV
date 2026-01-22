@@ -4,16 +4,3 @@ compatibility_flags = ["nodejs_compat"]
 
 [pages]
 pages_build_output_dir = ".vercel/output/static"
-
-[build]
-command = "pnpm install --frozen-lockfile && pnpm run pages:build"
-publish = ".vercel/output/static"
-
-[[redirects]]
-source = "/api/*"
-destination = "/api/:splat"
-status_code = 301
-
-[[functions]]
-globs = ["app/api/**/*.{ts,tsx}"]
-runtime = "edge"
