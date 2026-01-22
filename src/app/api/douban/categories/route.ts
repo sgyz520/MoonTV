@@ -19,11 +19,12 @@ interface DoubanCategoryApiResponse {
   }>;
 }
 
-// 处理图片 URL，添加防盗链代理
+// 处理图片 URL，使用 wsrv.nl 全球 CDN 代理
 function processPosterUrl(url: string): string {
   if (!url) return '';
-  // 使用 weserv.nl 作为图片代理，解决豆瓣防盗链问题
-  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+  // 使用 wsrv.nl (weserv) 代理，它能稳定绕过豆瓣防盗链，且支持 Cloudflare 部署
+  // 添加 output=webp 提升加载速度
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp`;
 }
 
 // 带超时的 fetch 请求
