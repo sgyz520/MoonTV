@@ -19,12 +19,12 @@ interface DoubanCategoryApiResponse {
   }>;
 }
 
-// 处理图片 URL，使用 wsrv.nl 全球 CDN 代理
+// 处理图片 URL，使用本地 API 代理
 function processPosterUrl(url: string): string {
   if (!url) return '';
-  // 使用 wsrv.nl (weserv) 代理，它能稳定绕过豆瓣防盗链，且支持 Cloudflare 部署
-  // 添加 output=webp 提升加载速度
-  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp`;
+  // 使用本地 API 代理
+  // 注意：这里返回相对路径，在 Cloudflare Pages 中会自动匹配当前域名
+  return `/api/image-proxy?url=${encodeURIComponent(url)}`;
 }
 
 // 带超时的 fetch 请求
