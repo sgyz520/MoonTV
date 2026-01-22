@@ -60,7 +60,15 @@ async function fetchMaoyanData(url: string): Promise<MaoyanFilmItem[]> {
       const posterMatch = posterRegex.exec(cardHtml);
       if (!posterMatch) continue;
 
-      const posterUrl = posterMatch[1];
+      let posterUrl = posterMatch[1];
+      
+      // 修复猫眼图片防盗链问题
+      if (posterUrl) {
+        // 移除可能的尺寸后缀，获取原图
+        posterUrl = posterUrl.split('@')[0];
+        // 使用 weserv.nl 作为图片代理
+        posterUrl = `https://images.weserv.nl/?url=${encodeURIComponent(posterUrl)}`;
+      }
 
       // 提取评分 - 优化正则表达式，匹配不同的评分样式
       const scoreRegex = /<div[^>]*class=["']channel-detail channel-detail-orange["'][^>]*>([^<]*)<\/div>/;

@@ -84,7 +84,11 @@ async function scrapeMaoyanFilms(url: string): Promise<MaoyanFilmItem[]> {
     const posterMatch = posterRegex.exec(cardHtml);
     if (!posterMatch) continue;
 
-    const posterUrl = posterMatch[1];
+    let posterUrl = posterMatch[1];
+    if (posterUrl) {
+      posterUrl = posterUrl.split('@')[0];
+      posterUrl = `https://images.weserv.nl/?url=${encodeURIComponent(posterUrl)}`;
+    }
 
     // 提取年份
     const yearRegex = /<div class="channel-detail movie-item-subtitle">[^<]*?(\d{4})[^<]*?<\/div>/;
