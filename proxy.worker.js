@@ -66,7 +66,7 @@ async function handleRequest(request) {
     });
 
     // 添加禁用缓存的头部
-    setNoCacheHeaders(modifiedResponse.headers);
+    setCacheHeaders(modifiedResponse.headers);
 
     // 添加 CORS 头部，允许跨域访问
     setCorsHeaders(modifiedResponse.headers);
@@ -139,9 +139,9 @@ function filterHeaders(headers, filterFunc) {
   return new Headers([...headers].filter(([name]) => filterFunc(name)));
 }
 
-// 设置禁用缓存的头部
-function setNoCacheHeaders(headers) {
-  headers.set('Cache-Control', 'no-store');
+// 设置缓存头部（边缘节点缓存 30 天）
+function setCacheHeaders(headers) {
+  headers.set('Cache-Control', 'public, max-age=2592000');
 }
 
 // 设置 CORS 头部
