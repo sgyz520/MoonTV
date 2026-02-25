@@ -278,6 +278,7 @@ export default function VideoCard({
           src={processImageUrl(actualPoster)}
           alt={actualTitle}
           fill
+          loading='eager'
           className='object-cover'
           referrerPolicy='no-referrer'
           sizes='(max-width: 640px) 96px, 180px'
@@ -313,8 +314,8 @@ export default function VideoCard({
                 onClick={handleToggleFavorite}
                 size={20}
                 className={`transition-all duration-300 ease-out ${favorited
-                    ? 'fill-red-600 stroke-red-600'
-                    : 'fill-transparent stroke-white hover:stroke-red-400'
+                  ? 'fill-red-600 stroke-red-600'
+                  : 'fill-transparent stroke-white hover:stroke-red-400'
                   } hover:scale-[1.1]`}
               />
             )}
