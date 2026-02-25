@@ -30,14 +30,24 @@ export function getImageProxyUrl(): string | null {
 
 /**
  * 处理图片 URL，如果设置了图片代理则使用代理
+ * 当未配置外部代理时，自动使用内置的 /api/image-proxy 代理第三方图片，
+ * 以解决 iOS Safari 等移动端浏览器的防盗链问题
  */
 export function processImageUrl(originalUrl: string): string {
   if (!originalUrl) return originalUrl;
 
   const proxyUrl = getImageProxyUrl();
-  if (!proxyUrl) return originalUrl;
+  if (proxyUrl) {
+    return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
+  }
 
-  return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
+  // 没有配置外部代理时，对第三方图片自动使用内置代理
+  // 仅代理 http/https 开头的绝对路径（即第三方图片），跳过相对路径和 data URI
+  if (originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
+    return `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`;
+  }
+
+  return originalUrl;
 }
 
 /**
@@ -159,14 +169,14 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
               width >= 3840
                 ? '4K' // 4K: 3840x2160
                 : width >= 2560
-                ? '2K' // 2K: 2560x1440
-                : width >= 1920
-                ? '1080p' // 1080p: 1920x1080
-                : width >= 1280
-                ? '720p' // 720p: 1280x720
-                : width >= 854
-                ? '480p'
-                : 'SD'; // 480p: 854x480
+                  ? '2K' // 2K: 2560x1440
+                  : width >= 1920
+                    ? '1080p' // 1080p: 1920x1080
+                    : width >= 1280
+                      ? '720p' // 720p: 1280x720
+                      : width >= 854
+                        ? '480p'
+                        : 'SD'; // 480p: 854x480
 
             resolve({
               quality,
@@ -239,8 +249,7 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
     });
   } catch (error) {
     throw new Error(
-      `Error getting video resolution: ${
-        error instanceof Error ? error.message : String(error)
+      `Error getting video resolution: ${error instanceof Error ? error.message : String(error)
       }`
     );
   }
